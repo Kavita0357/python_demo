@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import String, Boolean, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
@@ -36,6 +36,12 @@ class User(Base):
         nullable=True
     )
 
+    role_id: Mapped[int | None] = mapped_column(
+        ForeignKey("roles.id"),
+        nullable=True,
+        index=True
+    )
+
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
@@ -53,4 +59,9 @@ class User(Base):
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
         nullable=False
+    )
+
+    role = relationship(
+        "Role",
+        backref="users"
     )

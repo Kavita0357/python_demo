@@ -1,9 +1,14 @@
 from datetime import datetime, timedelta, timezone
 
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.database import get_db
+from app.models.user import User
 
 
 pwd_context = CryptContext(
@@ -12,6 +17,10 @@ pwd_context = CryptContext(
 )
 
 
+# ---------------------------------------------------------
+# PASSWORD
+# ---------------------------------------------------------
+
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
@@ -19,6 +28,10 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, password_hash: str) -> bool:
     return pwd_context.verify(password, password_hash)
 
+
+# ---------------------------------------------------------
+# ACCESS TOKEN
+# ---------------------------------------------------------
 
 def create_access_token(user_id: int):
     expire = datetime.now(timezone.utc) + timedelta(
@@ -37,6 +50,10 @@ def create_access_token(user_id: int):
         algorithm=settings.JWT_ALGORITHM,
     )
 
+
+# ---------------------------------------------------------
+# PASSWORD RESET TOKEN
+# ---------------------------------------------------------
 
 def create_password_reset_token(user_id: int):
     expire = datetime.now(timezone.utc) + timedelta(minutes=15)
@@ -74,3 +91,56 @@ def verify_password_reset_token(token: str):
 
     except Exception:
         return None
+
+
+# ---------------------------------------------------------
+# CURRENT USER
+# ---------------------------------------------------------
+
+bearer_scheme = HTTPBearer()
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={
+            "WWW-Authenticate": "Bearer"
+        },
+    )
+
+    token = credentials.credentials
+
+    try:
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+
+        user_id = payload.get("sub")
+
+        if user_id is None:
+            raise credentials_exception
+
+        if payload.get("type") != "access":
+            raise credentials_exception
+
+        user_id = int(user_id)
+
+    except (Exception):
+        raise credentials_exception
+
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
+
+    if user is None:
+        raise credentials_exception
+
+    return user
