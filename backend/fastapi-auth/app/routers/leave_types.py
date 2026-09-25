@@ -10,7 +10,7 @@ from app.schemas.leave_type import (
 )
 
 router = APIRouter(
-    prefix="/leave-types",
+    prefix="/api/leave-types",
     tags=["Leave Types"]
 )
 

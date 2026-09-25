@@ -63,5 +63,11 @@ class User(Base):
 
     role = relationship(
         "Role",
-        backref="users"
+        back_populates="users",
+    )
+    
+    leaves = relationship(
+        "Leave",
+        foreign_keys="Leave.user_id",
+        back_populates="user",
     )

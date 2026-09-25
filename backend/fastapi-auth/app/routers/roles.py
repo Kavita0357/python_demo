@@ -16,6 +16,8 @@ from app.services.role_service import (
     update_role,
     delete_role,
 )
+from app.core.security import require_admin
+from app.models.user import User
 
 
 router = APIRouter(
@@ -31,6 +33,7 @@ router = APIRouter(
 )
 def create(
     data: RoleCreate,
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     role = create_role(
@@ -53,6 +56,7 @@ def create(
     response_model=list[RoleResponse],
 )
 def list_roles(
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     return get_roles(db)
@@ -64,6 +68,7 @@ def list_roles(
 )
 def get(
     role_id: int,
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     role = get_role(db, role_id)
@@ -84,6 +89,7 @@ def get(
 def update(
     role_id: int,
     data: RoleUpdate,
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     role = update_role(
@@ -107,6 +113,7 @@ def update(
 )
 def delete(
     role_id: int,
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     deleted = delete_role(

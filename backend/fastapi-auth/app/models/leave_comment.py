@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Integer, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -37,4 +37,9 @@ class LeaveComment(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False
+    )
+    
+    user = relationship(
+        "User",
+        foreign_keys=[user_id],
     )

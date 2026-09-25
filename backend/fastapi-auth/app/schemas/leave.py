@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class LeaveCreate(BaseModel):
@@ -14,6 +14,16 @@ class LeaveCreate(BaseModel):
         max_length=2000
     )
 
+
+class LeaveUserResponse(BaseModel):
+    id: int
+    first_name: str | None = None
+    last_name: str | None = None
+    email: EmailStr
+
+    model_config = {
+        "from_attributes": True
+    }
 
 class LeaveResponse(BaseModel):
     id: int
@@ -29,6 +39,8 @@ class LeaveResponse(BaseModel):
     reason: str | None
 
     status: str
+    
+    user: LeaveUserResponse | None = None
 
     approved_by: int | None
     approved_at: datetime | None
@@ -69,6 +81,8 @@ class LeaveCommentResponse(BaseModel):
     comment: str
 
     created_at: datetime
+    
+    user: LeaveUserResponse | None = None
 
     model_config = ConfigDict(
         from_attributes=True

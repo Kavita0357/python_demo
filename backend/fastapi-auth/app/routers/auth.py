@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.services.email_service import send_password_reset_email
+from app.models.user import User
 
 from app.core.security import (
     create_access_token,
@@ -58,7 +59,6 @@ def register(
 
     return user
 
-
 @router.post(
     "/login",
     response_model=TokenResponse,
@@ -86,8 +86,7 @@ def login(
         "token_type": "bearer",
         "user": user,
     }
-
-
+ 
 @router.post(
     "/forgot-password",
     response_model=ForgotPasswordResponse,

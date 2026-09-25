@@ -1,10 +1,10 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_admin
 
 from app.models.user import User
 from app.models.leave import Leave
@@ -22,7 +22,7 @@ from app.schemas.leave import (
 
 
 router = APIRouter(
-    prefix="/leaves",
+    prefix="/api/leaves",
     tags=["Leaves"]
 )
 
@@ -110,7 +110,17 @@ def create_leave(
     db.commit()
     db.refresh(leave)
 
+    # Load user for response
+    leave = (
+        db.query(Leave)
+        .options(joinedload(Leave.user))
+        .filter(Leave.id == leave.id)
+        .first()
+    )
+
     return leave
+
+
 # ---------------------------------------------------------
 # GET MY LEAVES
 # ---------------------------------------------------------
@@ -125,6 +135,7 @@ def get_my_leaves(
 ):
     return (
         db.query(Leave)
+        .options(joinedload(Leave.user))
         .filter(
             Leave.user_id == current_user.id
         )
@@ -136,7 +147,7 @@ def get_my_leaves(
 
 
 # ---------------------------------------------------------
-# GET ALL LEAVES
+# GET ALL LEAVES - ADMIN
 # ---------------------------------------------------------
 
 @router.get(
@@ -145,9 +156,13 @@ def get_my_leaves(
 )
 def get_leaves(
     status_filter: str | None = None,
-    db: Session = Depends(get_db)
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
-    query = db.query(Leave)
+    query = (
+        db.query(Leave)
+        .options(joinedload(Leave.user))
+    )
 
     if status_filter is not None:
         query = query.filter(
@@ -171,10 +186,14 @@ def get_leaves(
 )
 def get_leave(
     leave_id: int,
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     leave = (
         db.query(Leave)
+        .options(
+            joinedload(Leave.user)
+        )
         .filter(
             Leave.id == leave_id
         )
@@ -185,6 +204,17 @@ def get_leave(
         raise HTTPException(
             status_code=404,
             detail="Leave application not found"
+        )
+
+    is_admin = (
+        current_user.role
+        and current_user.role.name.lower() == "admin"
+    )
+
+    if not is_admin and leave.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not allowed to view this leave application"
         )
 
     return leave
@@ -205,6 +235,7 @@ def submit_leave(
 ):
     leave = (
         db.query(Leave)
+        .options(joinedload(Leave.user))
         .filter(
             Leave.id == leave_id,
             Leave.user_id == current_user.id
@@ -242,11 +273,12 @@ def submit_leave(
 )
 def approve_leave(
     leave_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     leave = (
         db.query(Leave)
+        .options(joinedload(Leave.user))
         .filter(
             Leave.id == leave_id
         )
@@ -313,11 +345,12 @@ def approve_leave(
 def reject_leave(
     leave_id: int,
     data: LeaveReject,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     leave = (
         db.query(Leave)
+        .options(joinedload(Leave.user))
         .filter(
             Leave.id == leave_id
         )
@@ -340,7 +373,6 @@ def reject_leave(
     leave.rejected_by = current_user.id
     leave.rejected_at = datetime.now()
 
-    # Save rejection reason as a comment
     comment = LeaveComment(
         leave_id=leave.id,
         user_id=current_user.id,
@@ -369,6 +401,7 @@ def cancel_leave(
 ):
     leave = (
         db.query(Leave)
+        .options(joinedload(Leave.user))
         .filter(
             Leave.id == leave_id,
             Leave.user_id == current_user.id
@@ -416,7 +449,6 @@ def cancel_leave(
     db.refresh(leave)
 
     return leave
-
 
 # ---------------------------------------------------------
 # ADD COMMENT
@@ -488,6 +520,9 @@ def get_leave_comments(
 
     return (
         db.query(LeaveComment)
+        .options(
+            joinedload(LeaveComment.user)
+        )
         .filter(
             LeaveComment.leave_id == leave_id
         )

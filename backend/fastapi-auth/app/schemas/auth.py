@@ -13,12 +13,21 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RoleResponse(BaseModel):
+    id: int
+    name: str
+    description: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
-    first_name: str | None
-    last_name: str | None
+    first_name: str | None = None
+    last_name: str | None = None
     is_active: bool
+    role: RoleResponse | None = None
 
     model_config = {"from_attributes": True}
 

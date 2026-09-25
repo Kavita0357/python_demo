@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.user import User
 from app.core.security import (
@@ -17,7 +17,7 @@ def register_user(
     first_name: str | None = None,
     last_name: str | None = None,
 ):
-    existing_user = db.scalar(select(User).where(User.email == email))
+    existing_user = db.scalar(select(User).options(selectinload(User.role)).where(User.email == email))
 
     if existing_user:
         return None
@@ -41,7 +41,11 @@ def authenticate_user(
     email: str,
     password: str,
 ):
-    user = db.scalar(select(User).where(User.email == email))
+    user = db.scalar(
+        select(User)
+        .options(selectinload(User.role))
+        .where(User.email == email)
+    )
 
     if not user:
         return None

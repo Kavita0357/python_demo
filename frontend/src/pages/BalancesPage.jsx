@@ -1,0 +1,5 @@
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { leaveBalanceService, leaveTypeService } from '../services/leaveService';
+
+export default function BalancesPage(){const {user}=useAuth();const[b,setB]=useState([]),[t,setT]=useState([]);useEffect(()=>{if(user?.id)Promise.all([leaveBalanceService.byUser(user.id),leaveTypeService.list()]).then(([a,c])=>{setB(a);setT(c)})},[user?.id]);return <div className="page"><div className="page-title"><div><p className="eyebrow">Time off</p><h1>Leave balance</h1><p>Your allocated and used leave days.</p></div></div><div className="balance-cards">{b.map(x=>{const type=t.find(y=>y.id===x.leave_type_id);return <div className="balance-card" key={x.id}><span>{type?.name||`Leave #${x.leave_type_id}`}</span><strong>{x.remaining_days}</strong><small>days remaining</small><div className="balance-meta"><span>{x.used_days} used</span><span>{x.allocated_days} allocated</span></div></div>})}{!b.length&&<div className="panel empty">No balances configured for your account.</div>}</div></div>}

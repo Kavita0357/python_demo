@@ -1,7 +1,7 @@
 from datetime import date, datetime
 
 from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -74,6 +74,12 @@ class Leave(Base):
     rejected_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True
+    )
+    
+    user = relationship(
+        "User",
+        foreign_keys=[user_id],
+        back_populates="leaves",
     )
 
     created_at: Mapped[datetime] = mapped_column(

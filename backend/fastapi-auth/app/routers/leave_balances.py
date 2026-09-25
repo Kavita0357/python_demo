@@ -12,7 +12,7 @@ from app.schemas.leave_balance import (
 
 
 router = APIRouter(
-    prefix="/leave-balances",
+    prefix="/api/leave-balances",
     tags=["Leave Balances"]
 )
 
