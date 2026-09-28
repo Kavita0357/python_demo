@@ -6,6 +6,7 @@ from app.routers.users import router as users_router
 from app.routers.leave_types import router as leave_type_router
 from app.routers.leave_balances import router as leave_balance_router
 from app.routers.leaves import router as leave_router
+from app.routers.dossiers import router as dossier_router
 
 app = FastAPI(
     title="React FastAPI Authentication API",
@@ -18,6 +19,7 @@ app.include_router(users_router)
 app.include_router(leave_type_router)
 app.include_router(leave_balance_router)
 app.include_router(leave_router)
+app.include_router(dossier_router)
 
 # React frontend
 app.add_middleware(

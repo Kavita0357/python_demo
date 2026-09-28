@@ -13,6 +13,8 @@ from app.models.leave_type import LeaveType
 from app.models.leave_balance import LeaveBalance
 from app.models.leave import Leave
 from app.models.leave_comment import LeaveComment
+from app.models.dossier import Dossier
+from app.models.dossier_module import DossierModule
 
 # Alembic Config object
 config = context.config

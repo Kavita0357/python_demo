@@ -17,8 +17,9 @@ export default function AppLayout() {
           </div>
           <nav>
             <NavLink to="/dashboard">Overview</NavLink>
-            <NavLink to="/leaves">My requests</NavLink>
-            <NavLink to="/balances">Leave balance</NavLink>
+            {/* <NavLink to="/leaves">My requests</NavLink> */}
+            {/* <NavLink to="/balances">Leave balance</NavLink> */}
+            <NavLink to="/dossiers">Dossiers</NavLink>
             {isAdmin && <NavLink to="/admin">Admin panel</NavLink>}
           </nav>
           <div className="sidebar-note">
