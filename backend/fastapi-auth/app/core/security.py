@@ -159,3 +159,25 @@ def require_admin(
         )
 
     return current_user
+
+
+def _require_dossier_role(current_user: User, allowed_roles: set[str]) -> User:
+    role_name = current_user.role.name.lower() if current_user.role else "viewer"
+    if role_name not in allowed_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to perform this action",
+        )
+    return current_user
+
+
+def require_dossier_viewer(current_user: User = Depends(get_current_user)) -> User:
+    return _require_dossier_role(current_user, {"admin", "editor", "viewer"})
+
+
+def require_dossier_editor(current_user: User = Depends(get_current_user)) -> User:
+    return _require_dossier_role(current_user, {"admin", "editor"})
+
+
+def require_dossier_admin(current_user: User = Depends(get_current_user)) -> User:
+    return _require_dossier_role(current_user, {"admin"})

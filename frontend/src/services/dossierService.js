@@ -24,6 +24,11 @@ export const dossierService = {
     return data;
   },
 
+  async delete(id) {
+    const { data } = await apiClient.delete(`${dossierBase}/${id}`);
+    return data;
+  },
+
   async updateStatus(id, status) {
     const { data } = await apiClient.patch(`${dossierBase}/${id}/status`, { status });
     return data;

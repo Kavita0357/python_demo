@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { dossierService } from "../services/dossierService";
+import { useAuth } from "../context/AuthContext";
 
 const initialForm = {
   name: "",
@@ -48,6 +49,11 @@ const formatDate = (date) => {
 };
 
 export default function DossiersPage() {
+  const { user } = useAuth();
+  const roleName = typeof user?.role === "string"
+    ? user.role
+    : user?.role?.name || user?.role_name || "";
+  const canCreate = ["admin", "editor"].includes(String(roleName).trim().toLowerCase());
   const [dossiers, setDossiers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,13 +72,6 @@ export default function DossiersPage() {
 
       const response = await dossierService.list();
 
-      /*
-       * Supports different possible API response formats:
-       *
-       * []
-       * { data: [] }
-       * { items: [] }
-       */
       const data = response?.data ?? response;
 
       const items = Array.isArray(data)
@@ -140,10 +139,20 @@ export default function DossiersPage() {
     }
   };
 
-  const toggleForm = () => {
+  const openCreateModal = () => {
     setError("");
+    setForm(initialForm);
+    setShowForm(true);
+  };
 
-    setShowForm((current) => !current);
+  const closeCreateModal = () => {
+    if (saving) {
+      return;
+    }
+
+    setShowForm(false);
+    setForm(initialForm);
+    setError("");
   };
 
   return (
@@ -154,7 +163,9 @@ export default function DossiersPage() {
 
       <div className="page-title dossiers-header">
         <div>
-          <p className="eyebrow">Regulatory Dossier Management</p>
+          <p className="eyebrow">
+            Regulatory Dossier Management
+          </p>
 
           <h1>Dossiers</h1>
 
@@ -163,91 +174,132 @@ export default function DossiersPage() {
           </p>
         </div>
 
-        <button
+        {canCreate && <button
           type="button"
           className="primary-btn"
-          onClick={toggleForm}
+          onClick={openCreateModal}
         >
-          {showForm ? "Close" : "+ Create dossier"}
-        </button>
+          + Create dossier
+        </button>}
       </div>
 
       {/* =========================================
           ERROR
       ========================================= */}
 
-      {error && <div className="alert">{error}</div>}
+      {error && !showForm && (
+        <div className="alert">
+          {error}
+        </div>
+      )}
 
       {/* =========================================
-          CREATE DOSSIER FORM
+          CREATE DOSSIER MODAL
       ========================================= */}
 
-      {showForm && (
-        <form
-          className="panel dossier-form"
-          onSubmit={submit}
+      {showForm && canCreate && (
+        <div
+          className="dossier-modal-overlay"
+          onMouseDown={closeCreateModal}
         >
-          <div className="panel-head">
-            <div>
-              <h2>Create dossier</h2>
+          <div
+            className="dossier-modal"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            {/* Modal Header */}
 
-              <p>
-                Start a new structured CTD dossier.
-              </p>
+            <div className="dossier-modal-header">
+              <div>
+                <p className="dossier-modal-eyebrow">
+                  CREATE DOSSIER
+                </p>
+
+                <h2>Create dossier</h2>
+
+                <p>
+                  Start a new structured CTD dossier.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="dossier-modal-close"
+                onClick={closeCreateModal}
+                disabled={saving}
+                aria-label="Close"
+              >
+                ×
+              </button>
             </div>
-          </div>
 
-          <label className="form-field">
-            <span>Dossier name</span>
+            {/* Modal Body */}
 
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleFormChange}
-              placeholder="Paracetamol 500mg Dossier"
-              maxLength={255}
-              disabled={saving}
-            />
-          </label>
-
-          <label className="form-field">
-            <span>Description</span>
-
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleFormChange}
-              placeholder="Regulatory dossier description"
-              maxLength={2000}
-              rows={4}
-              disabled={saving}
-            />
-          </label>
-
-          <div className="form-actions">
-            <button
-              type="button"
-              className="ghost-btn"
-              onClick={() => {
-                setShowForm(false);
-                setForm(initialForm);
-                setError("");
-              }}
-              disabled={saving}
+            <form
+              className="dossier-modal-form"
+              onSubmit={submit}
             >
-              Cancel
-            </button>
+              <label className="form-field">
+                <span>Dossier name</span>
 
-            <button
-              type="submit"
-              className="primary-btn"
-              disabled={saving}
-            >
-              {saving ? "Creating..." : "Create dossier"}
-            </button>
+                <input
+                  type="text"
+                  name="name"
+                  value={form.name}
+                  onChange={handleFormChange}
+                  placeholder="Paracetamol 500mg Dossier"
+                  maxLength={255}
+                  disabled={saving}
+                  autoFocus
+                />
+              </label>
+
+              <label className="form-field">
+                <span>Description</span>
+
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleFormChange}
+                  placeholder="Regulatory dossier description"
+                  maxLength={2000}
+                  rows={5}
+                  disabled={saving}
+                />
+              </label>
+
+              {error && (
+                <div className="alert dossier-modal-alert">
+                  {error}
+                </div>
+              )}
+
+              {/* Modal Actions */}
+
+              <div className="dossier-modal-actions">
+                <button
+                  type="button"
+                  className="ghost-btn"
+                  onClick={closeCreateModal}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="primary-btn"
+                  disabled={saving}
+                >
+                  {saving
+                    ? "Creating..."
+                    : "Create dossier"}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
       )}
 
       {/* =========================================

@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import get_current_user, require_admin
+from app.core.security import require_dossier_admin, require_dossier_editor, require_dossier_viewer
 from app.models.dossier import Dossier
 from app.models.dossier_module import DossierModule
 from app.schemas.dossier import (
@@ -23,6 +23,14 @@ router = APIRouter(
     tags=["Dossiers"],
 )
 
+CTD_MODULES = (
+    ("1", "Administrative Information and Prescribing Information", "Regional administrative information and prescribing information."),
+    ("2", "CTD Summaries", "Quality, nonclinical, and clinical overviews and summaries."),
+    ("3", "Quality", "Chemistry, manufacturing, and controls documentation."),
+    ("4", "Nonclinical Study Reports", "Nonclinical study reports and related documentation."),
+    ("5", "Clinical Study Reports", "Clinical study reports and related documentation."),
+)
+
 @router.post(
     "",
     response_model=DossierResponse,
@@ -31,7 +39,7 @@ router = APIRouter(
 def create_dossier(
     data: DossierCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_dossier_editor),
 ):
     dossier = Dossier(
         name=data.name,
@@ -39,6 +47,18 @@ def create_dossier(
         status="DRAFT",
         created_by=current_user.id,
     )
+
+    # Add the standard CTD structure as part of the dossier transaction so
+    # every newly created dossier starts with all five modules.
+    dossier.modules = [
+        DossierModule(
+            module_number=module_number,
+            module_name=module_name,
+            description=description,
+            status="NOT_STARTED",
+        )
+        for module_number, module_name, description in CTD_MODULES
+    ]
 
     db.add(dossier)
     db.commit()
@@ -52,11 +72,10 @@ def create_dossier(
 )
 def get_dossiers(
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_dossier_viewer),
 ):
     result = db.execute(
         select(Dossier)
-        .where(Dossier.created_by == current_user.id)
         .order_by(Dossier.created_at.desc())
     )
 
@@ -69,12 +88,11 @@ def get_dossiers(
 def get_dossier(
     dossier_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_dossier_viewer),
 ):
     result = db.execute(
         select(Dossier).where(
             Dossier.id == dossier_id,
-            Dossier.created_by == current_user.id,
         )
     )
 
@@ -96,12 +114,11 @@ def update_dossier(
     dossier_id: int,
     data: DossierUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_dossier_editor),
 ):
     result = db.execute(
         select(Dossier).where(
             Dossier.id == dossier_id,
-            Dossier.created_by == current_user.id,
         )
     )
 
@@ -124,6 +141,23 @@ def update_dossier(
 
     return dossier
 
+
+@router.delete(
+    "/{dossier_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_dossier(
+    dossier_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_dossier_admin),
+):
+    dossier = db.get(Dossier, dossier_id)
+    if not dossier:
+        raise HTTPException(status_code=404, detail="Dossier not found")
+
+    db.delete(dossier)
+    db.commit()
+
 @router.post(
     "/{dossier_id}/modules",
     response_model=DossierModuleResponse,
@@ -133,12 +167,11 @@ def create_module(
     dossier_id: int,
     data: DossierModuleCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_dossier_editor),
 ):
     result = db.execute(
         select(Dossier).where(
             Dossier.id == dossier_id,
-            Dossier.created_by == current_user.id,
         )
     )
 
@@ -171,14 +204,13 @@ def create_module(
 def get_modules(
     dossier_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_dossier_viewer),
 ):
     result = db.execute(
         select(DossierModule)
         .join(Dossier)
         .where(
             DossierModule.dossier_id == dossier_id,
-            Dossier.created_by == current_user.id,
         )
         .order_by(DossierModule.module_number)
     )
@@ -194,7 +226,7 @@ def update_module(
     module_id: int,
     data: DossierModuleUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_dossier_editor),
 ):
     result = db.execute(
         select(DossierModule)
@@ -202,7 +234,6 @@ def update_module(
         .where(
             DossierModule.id == module_id,
             DossierModule.dossier_id == dossier_id,
-            Dossier.created_by == current_user.id,
         )
     )
 
@@ -236,13 +267,12 @@ def update_dossier_status(
     dossier_id: int,
     data: DossierStatusUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_dossier_editor),
 ):
     # Get dossier
     result = db.execute(
         select(Dossier).where(
             Dossier.id == dossier_id,
-            Dossier.created_by == current_user.id,
         )
     )
 
@@ -299,7 +329,7 @@ def update_module_status(
     module_id: int,
     data: DossierModuleStatusUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_dossier_editor),
 ):
     result = db.execute(
         select(DossierModule)
@@ -307,7 +337,6 @@ def update_module_status(
         .where(
             DossierModule.id == module_id,
             DossierModule.dossier_id == dossier_id,
-            Dossier.created_by == current_user.id,
         )
     )
 

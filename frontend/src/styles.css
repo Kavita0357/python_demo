@@ -638,7 +638,8 @@ a:hover {
 .ghost-btn {
     background: #fff;
     border-color: #dbe1ea;
-    color: #475569
+    color: #475569;
+    margin-right: 5px
 }
 
 .ghost-btn:hover {
@@ -3218,6 +3219,304 @@ td small {
   }
 
   .module-modal-footer button {
+    width: 100%;
+  }
+}
+
+/* =========================================
+   CREATE DOSSIER MODAL
+========================================= */
+
+.dossier-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background: rgba(15, 23, 42, 0.55);
+
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+
+  animation: dossierOverlayIn 0.18s ease-out;
+}
+
+@keyframes dossierOverlayIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.dossier-modal {
+  width: 100%;
+  max-width: 620px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow:
+    0 24px 70px rgba(15, 23, 42, 0.2),
+    0 8px 25px rgba(15, 23, 42, 0.08);
+
+  overflow: hidden;
+
+  animation: dossierModalIn 0.2s ease-out;
+}
+
+@keyframes dossierModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* =========================================
+   MODAL HEADER
+========================================= */
+
+.dossier-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 26px 28px 22px;
+
+  border-bottom: 1px solid #e8edf3;
+}
+
+.dossier-modal-eyebrow {
+  margin: 0 0 6px;
+
+  color: #4f46e5;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
+}
+
+.dossier-modal-header h2 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.dossier-modal-header p:last-child {
+  margin: 7px 0 0;
+
+  color: #64748b;
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* =========================================
+   CLOSE BUTTON
+========================================= */
+
+.dossier-modal-close {
+  flex: 0 0 auto;
+
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: #f1f5f9;
+
+  color: #64748b;
+
+  font-size: 24px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.dossier-modal-close:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.dossier-modal-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   MODAL FORM
+========================================= */
+
+.dossier-modal-form {
+  padding: 26px 28px 28px;
+}
+
+.dossier-modal-form .form-field {
+  display: block;
+
+  margin-bottom: 20px;
+}
+
+.dossier-modal-form .form-field span {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #334155;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dossier-modal-form .form-field input,
+.dossier-modal-form .form-field textarea {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  border: 1px solid #d7dee8;
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  color: #0f172a;
+
+  font-family: inherit;
+  font-size: 14px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dossier-modal-form .form-field input {
+  height: 46px;
+
+  padding: 0 13px;
+}
+
+.dossier-modal-form .form-field textarea {
+  min-height: 120px;
+
+  padding: 12px 13px;
+
+  resize: vertical;
+}
+
+.dossier-modal-form .form-field input::placeholder,
+.dossier-modal-form .form-field textarea::placeholder {
+  color: #94a3b8;
+}
+
+.dossier-modal-form .form-field input:focus,
+.dossier-modal-form .form-field textarea:focus {
+  border-color: #4f46e5;
+
+  box-shadow:
+    0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.dossier-modal-form .form-field input:disabled,
+.dossier-modal-form .form-field textarea:disabled {
+  background: #f8fafc;
+
+  cursor: not-allowed;
+}
+
+/* =========================================
+   MODAL ERROR
+========================================= */
+
+.dossier-modal-alert {
+  margin-bottom: 20px;
+}
+
+/* =========================================
+   MODAL ACTIONS
+========================================= */
+
+.dossier-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+
+  gap: 10px;
+
+  padding-top: 4px;
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 640px) {
+  .dossier-modal-overlay {
+    align-items: flex-start;
+
+    padding: 16px;
+
+    overflow-y: auto;
+  }
+
+  .dossier-modal {
+    margin-top: 20px;
+
+    border-radius: 14px;
+  }
+
+  .dossier-modal-header {
+    padding: 22px 20px 18px;
+  }
+
+  .dossier-modal-header h2 {
+    font-size: 21px;
+  }
+
+  .dossier-modal-form {
+    padding: 22px 20px 24px;
+  }
+
+  .dossier-modal-actions {
+    flex-direction: column-reverse;
+
+    width: 100%;
+  }
+
+  .dossier-modal-actions button {
     width: 100%;
   }
 }

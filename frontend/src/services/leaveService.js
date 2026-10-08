@@ -29,4 +29,7 @@ export const leaveBalanceService = {
 
 export const roleService = {
   list: async () => (await apiClient.get(API_ENDPOINTS.roles)).data,
+  create: async (payload) => (await apiClient.post(API_ENDPOINTS.roles, payload)).data,
+  update: async (id, payload) => (await apiClient.put(`${API_ENDPOINTS.roles}/${id}`, payload)).data,
+  delete: async (id) => (await apiClient.delete(`${API_ENDPOINTS.roles}/${id}`)).data,
 };

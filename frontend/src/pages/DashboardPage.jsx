@@ -11,6 +11,12 @@ const statusLabels = {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const roleName = typeof user?.role === "string"
+    ? user.role
+    : user?.role?.name || user?.role_name || "";
+  const canCreateDossier = ["admin", "editor"].includes(
+    String(roleName).trim().toLowerCase(),
+  );
 
   const [dossiers, setDossiers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,9 +80,11 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <Link className="primary-btn" to="/dossiers">
-          + Create dossier
-        </Link>
+        {canCreateDossier && (
+          <Link className="primary-btn" to="/dossiers">
+            + Create dossier
+          </Link>
+        )}
       </div>
 
       {/* Dossier Stats */}

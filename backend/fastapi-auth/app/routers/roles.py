@@ -92,6 +92,24 @@ def update(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    existing_role = get_role(db, role_id)
+    if not existing_role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found",
+        )
+
+    built_in_roles = {"admin", "editor", "viewer"}
+    if (
+        existing_role.name.lower() in built_in_roles
+        and data.name is not None
+        and data.name.lower() != existing_role.name.lower()
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Built-in role names cannot be changed",
+        )
+
     role = update_role(
         db=db,
         role_id=role_id,
@@ -116,6 +134,25 @@ def delete(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    role = get_role(db, role_id)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found",
+        )
+
+    if role.name.lower() in {"admin", "editor", "viewer"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Built-in roles cannot be deleted",
+        )
+
+    if role.users:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Reassign users before deleting this role",
+        )
+
     deleted = delete_role(
         db=db,
         role_id=role_id,

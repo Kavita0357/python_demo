@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { dossierService } from "../services/dossierService";
+import { useAuth } from "../context/AuthContext";
 
 const statusClass = (status) =>
   `status-pill status-${String(status || "")
@@ -46,6 +47,10 @@ export default function DossierDetailsPage() {
   const { id } = useParams();
   const dossierId = Number(id);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const role = (user?.role?.name || user?.role_name || "viewer").toLowerCase();
+  const canEdit = role === "admin" || role === "editor";
+  const isAdmin = role === "admin";
 
   const [dossier, setDossier] = useState(null);
   const [modules, setModules] = useState([]);
@@ -57,6 +62,10 @@ export default function DossierDetailsPage() {
   const [error, setError] = useState("");
 
   const [showModuleForm, setShowModuleForm] = useState(false);
+  const [showDossierForm, setShowDossierForm] = useState(false);
+  const [savingDossier, setSavingDossier] = useState(false);
+  const [deletingDossier, setDeletingDossier] = useState(false);
+  const [dossierForm, setDossierForm] = useState({ name: "", description: "" });
   const [editingModule, setEditingModule] = useState(null);
 
   const [moduleForm, setModuleForm] = useState({
@@ -216,6 +225,37 @@ export default function DossierDetailsPage() {
     }
   };
 
+  const saveDossier = async (event) => {
+    event.preventDefault();
+    try {
+      setSavingDossier(true);
+      setError("");
+      const updated = await dossierService.update(dossierId, {
+        name: dossierForm.name.trim(),
+        description: dossierForm.description.trim() || null,
+      });
+      setDossier(updated);
+      setShowDossierForm(false);
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Unable to update dossier.");
+    } finally {
+      setSavingDossier(false);
+    }
+  };
+
+  const deleteDossier = async () => {
+    if (!window.confirm(`Delete “${dossier.name}” and all its CTD modules? This cannot be undone.`)) return;
+    try {
+      setDeletingDossier(true);
+      setError("");
+      await dossierService.delete(dossierId);
+      navigate("/dossiers");
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Unable to delete dossier.");
+      setDeletingDossier(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="page dossier-details-page">
@@ -299,6 +339,13 @@ export default function DossierDetailsPage() {
             <span className={statusClass(dossier.status)}>
               {getStatusLabel(dossier.status)}
             </span>
+            {canEdit && <button className="ghost-btn" onClick={() => {
+              setDossierForm({ name: dossier.name || "", description: dossier.description || "" });
+              setShowDossierForm(true);
+            }}>Edit dossier</button>}
+            {isAdmin && <button className="danger-btn" onClick={deleteDossier} disabled={deletingDossier}>
+              {deletingDossier ? "Deleting…" : "Delete dossier"}
+            </button>}
           </div>
         </div>
 
@@ -416,7 +463,7 @@ export default function DossierDetailsPage() {
                   </p>
                 </div>
 
-                <button
+                {canEdit && <button
                   className="primary-btn"
                   onClick={() => {
                     setEditingModule(null);
@@ -431,7 +478,7 @@ export default function DossierDetailsPage() {
                   }}
                 >
                   + Add module
-                </button>
+                </button>}
               </div>
 
               {/* Module List */}
@@ -509,14 +556,14 @@ export default function DossierDetailsPage() {
                           </div>
 
                           <div className="module-actions">
-                            <button
+                            {canEdit && <button
                               className="ghost-btn small-btn"
                               onClick={() => openEdit(module)}
                             >
                               Edit
-                            </button>
+                            </button>}
 
-                            {module.status === "NOT_STARTED" && (
+                            {canEdit && module.status === "NOT_STARTED" && (
                               <button
                                 className="primary-btn small-btn"
                                 onClick={() =>
@@ -527,7 +574,7 @@ export default function DossierDetailsPage() {
                               </button>
                             )}
 
-                            {module.status === "IN_PROGRESS" && (
+                            {canEdit && module.status === "IN_PROGRESS" && (
                               <button
                                 className="primary-btn small-btn"
                                 onClick={() =>
@@ -570,7 +617,7 @@ export default function DossierDetailsPage() {
                 </strong>
               </div>
 
-              <div className="status-actions">
+              {canEdit && <div className="status-actions">
                 <button
                   className="ghost-btn"
                   disabled={updatingStatus || dossier.status !== "DRAFT"}
@@ -586,7 +633,7 @@ export default function DossierDetailsPage() {
                 >
                   Complete dossier
                 </button>
-              </div>
+              </div>}
 
               <p className="status-helper">
                 A dossier can only be completed after all CTD modules are
@@ -664,11 +711,29 @@ export default function DossierDetailsPage() {
           </aside>
         </div>
       </div>
+      {showDossierForm && canEdit && (
+        <div className="dossier-modal-overlay" onMouseDown={() => setShowDossierForm(false)}>
+          <div className="dossier-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="dossier-modal-header">
+              <div><p className="dossier-modal-eyebrow">DOSSIER DETAILS</p><h2>Edit dossier</h2></div>
+              <button type="button" className="dossier-modal-close" onClick={() => setShowDossierForm(false)}>×</button>
+            </div>
+            <form className="dossier-modal-form" onSubmit={saveDossier}>
+              <label className="form-field"><span>Dossier name</span><input value={dossierForm.name} maxLength={255} required onChange={(event) => setDossierForm({ ...dossierForm, name: event.target.value })} /></label>
+              <label className="form-field"><span>Description</span><textarea value={dossierForm.description} maxLength={2000} rows={5} onChange={(event) => setDossierForm({ ...dossierForm, description: event.target.value })} /></label>
+              <div className="dossier-modal-actions">
+                <button type="button" className="ghost-btn" onClick={() => setShowDossierForm(false)} disabled={savingDossier}>Cancel</button>
+                <button type="submit" className="primary-btn" disabled={savingDossier}>{savingDossier ? "Saving..." : "Save changes"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {/* =========================================
     MODULE MODAL
 ========================================= */}
 
-      {showModuleForm && (
+      {showModuleForm && canEdit && (
         <div
           className="module-modal-overlay"
           onMouseDown={(event) => {
